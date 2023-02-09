@@ -400,15 +400,5 @@ if __name__ == '__main__':
         print(decode(p_tokens[:i]))
         time.sleep(0.5)
 
-    # PATH = 'checkpoints/model_at_1000_L1_5.pt'
-    #
-    # net = BigramLanguageModel()
-    #
-    # checkpoint = torch.load(PATH)
-    # net.load_state_dict(checkpoint['model_state_dict'])
-    # iteration = checkpoint['iteration']
-    # loss = checkpoint['loss']
-    # print(net, iteration, loss)
-
     open('generate.txt', 'w', encoding="utf-8").write(
-        decode(model.generate(torch.zeros((1, 1), dtype=torch.long, device=device), max_gen_tokens=10)[0].tolist()))
+        decode(model.generate(torch.zeros((1, 1), dtype=torch.long, device=device), max_gen_tokens=10000)[0].tolist()))
