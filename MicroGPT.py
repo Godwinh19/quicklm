@@ -329,7 +329,7 @@ def training_loop(model, distributed=False, rank=None):
             saving_info = {
                 "bs": batch_size,
                 "blsz": block_size,
-                "max_iters": max_iters,
+                "max_iters": max_iters + iteration,
                 "lr": learning_rate,
                 "n_embd": n_embed,
                 "n_head": n_head,
