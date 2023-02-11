@@ -24,10 +24,10 @@ n_layer = 6
 dropout = 0.2
 ddp = False  # distributed training
 
-from_checkpoint = True
+from_checkpoint = False
 iteration = 0
 checkpoint_path = "checkpoints/"
-checkpoint_interval = 100
+checkpoint_interval = 5
 
 torch.cuda.empty_cache()
 
@@ -301,7 +301,8 @@ class BigramLanguageModel(nn.Module):
 
 def training_loop(model, distributed=False, rank=None):
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
-    for iter in range(max_iters+iteration):
+    for iter in range(iteration, max_iters+iteration):
+        print(f"Iteration {iter}")
 
         if iter % eval_interval == 0:
             losses = estimate_loss(model)
@@ -353,7 +354,7 @@ def training_loop(model, distributed=False, rank=None):
 
 
 if from_checkpoint:
-    CKPT_PATH = 'checkpoints/model_at_1000_L1_5.pt'
+    CKPT_PATH = 'checkpoints/BigramLanguageModel_model_at_565_L1_31.pt'
 
     model = BigramLanguageModel()
 
