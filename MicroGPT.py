@@ -16,6 +16,9 @@ block_size = 256  # maximum context to look at for the next prediction
 max_iters = 3000
 eval_interval = 500
 learning_rate = 3e-4
+step_size = 50
+lr_step_size = max_iters // step_size if max_iters > 2 * step_size else 10
+gamma = 0.1
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 eval_iters = 200
 n_embed = 384
@@ -27,7 +30,7 @@ ddp = False  # distributed training
 from_checkpoint = False
 iteration = 0
 checkpoint_path = "checkpoints/"
-checkpoint_interval = 5
+checkpoint_interval = 15
 
 torch.cuda.empty_cache()
 
@@ -162,24 +165,24 @@ class FeedForward(nn.Module):
     def __init__(self, n_embed, h_dim=None, dropout=dropout):
         super().__init__()
         h_dim = 4 * n_embed if h_dim is None else h_dim  # the size of ffwd layer
-        # self.ln1 = nn.Linear(n_embed, h_dim)
-        # self.ln2 = nn.Linear(h_dim, n_embed)
-        # self.drop = nn.Dropout(dropout)
+        self.ln1 = nn.Linear(n_embed, h_dim)
+        self.ln2 = nn.Linear(h_dim, n_embed)
+        self.drop = nn.Dropout(dropout)
 
         # in order to replicate the last checkpoint
-        self.net = nn.Sequential(
-            nn.Linear(n_embed, h_dim),
-            nn.ReLU(),
-            nn.Linear(h_dim, n_embed),
-            nn.Dropout(dropout),
-        )
+        # self.net = nn.Sequential(
+        #     nn.Linear(n_embed, h_dim),
+        #     nn.ReLU(),
+        #     nn.Linear(h_dim, n_embed),
+        #     nn.Dropout(dropout),
+        # )
 
     def forward(self, x):
-        # x = self.ln1(x)
-        # x = gelu(x)
-        # x = self.ln2(x)
-        # x = self.drop(x)
-        return self.net(x)
+        x = self.ln1(x)
+        x = gelu(x)
+        x = self.ln2(x)
+        x = self.drop(x)
+        return x
 
 
 # Create transformer block
@@ -301,6 +304,7 @@ class BigramLanguageModel(nn.Module):
 
 def training_loop(model, distributed=False, rank=None):
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer=optimizer, step_size=lr_step_size, gamma=gamma)
     for iter in range(iteration, max_iters+iteration):
         print(f"Iteration {iter}")
 
@@ -324,12 +328,16 @@ def training_loop(model, distributed=False, rank=None):
         loss = F.cross_entropy(logits, yb)
         loss.backward()
         optimizer.step()
+        scheduler.step()
 
         if iter % checkpoint_interval == 0:
             model_name = str(model.__class__.__name__)
             saving_info = {
                 "bs": batch_size,
                 "blsz": block_size,
+                "gamma": gamma,
+                "step_size": step_size,
+                "lr_step_size": lr_step_size,
                 "max_iters": max_iters + iteration,
                 "lr": learning_rate,
                 "n_embd": n_embed,
@@ -380,7 +388,6 @@ def distributed_training(rank, world_size):
 
 if __name__ == '__main__':
     print(sum(p.numel() for p in model.parameters()) / 1e6, 'M parameters')
-    # Create the optimizer
 
     if ddp:
         os.environ["MASTER_ADDR"] = "localhost"
@@ -400,6 +407,3 @@ if __name__ == '__main__':
     for i in range(0, len(p_tokens), 3):
         print(decode(p_tokens[:i]))
         time.sleep(0.5)
-
-    open('generate.txt', 'w', encoding="utf-8").write(
-        decode(model.generate(torch.zeros((1, 1), dtype=torch.long, device=device), max_gen_tokens=10000)[0].tolist()))
