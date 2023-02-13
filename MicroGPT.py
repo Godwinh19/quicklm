@@ -19,7 +19,7 @@ learning_rate = 3e-4
 step_size = 50
 lr_step_size = max_iters // step_size if max_iters > 2 * step_size else 10
 gamma = 0.1
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu" if torch.cuda.is_available() else "cpu")
 eval_iters = 200
 n_embed = 384
 n_head = 6
@@ -165,24 +165,24 @@ class FeedForward(nn.Module):
     def __init__(self, n_embed, h_dim=None, dropout=dropout):
         super().__init__()
         h_dim = 4 * n_embed if h_dim is None else h_dim  # the size of ffwd layer
-        self.ln1 = nn.Linear(n_embed, h_dim)
-        self.ln2 = nn.Linear(h_dim, n_embed)
-        self.drop = nn.Dropout(dropout)
+        # self.ln1 = nn.Linear(n_embed, h_dim)
+        # self.ln2 = nn.Linear(h_dim, n_embed)
+        # self.drop = nn.Dropout(dropout)
 
         # in order to replicate the last checkpoint
-        # self.net = nn.Sequential(
-        #     nn.Linear(n_embed, h_dim),
-        #     nn.ReLU(),
-        #     nn.Linear(h_dim, n_embed),
-        #     nn.Dropout(dropout),
-        # )
+        self.net = nn.Sequential(
+            nn.Linear(n_embed, h_dim),
+            nn.ReLU(),
+            nn.Linear(h_dim, n_embed),
+            nn.Dropout(dropout),
+        )
 
     def forward(self, x):
-        x = self.ln1(x)
-        x = gelu(x)
-        x = self.ln2(x)
-        x = self.drop(x)
-        return x
+        # x = self.ln1(x)
+        # x = gelu(x)
+        # x = self.ln2(x)
+        # x = self.drop(x)
+        return self.net(x)
 
 
 # Create transformer block
@@ -271,8 +271,7 @@ class GPT(nn.Module):
         return generate_token(self, idx, max_gen_tokens)
 
 
-# Simple Bigram Language model
-class BigramLanguageModel(nn.Module):
+class NGramLanguageModel(nn.Module):
     def __init__(self):
         super().__init__()
         self.token_embedding_table = nn.Embedding(vocab_size, n_embed)
@@ -364,7 +363,7 @@ def training_loop(model, distributed=False, rank=None):
 if from_checkpoint:
     CKPT_PATH = 'checkpoints/BigramLanguageModel_model_at_565_L1_31.pt'
 
-    model = BigramLanguageModel()
+    model = NGramLanguageModel()
 
     checkpoint = torch.load(CKPT_PATH)
     model.load_state_dict(checkpoint['model_state_dict'])
