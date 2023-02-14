@@ -1,1 +1,2 @@
 checkpoints/BigramLanguageModel_model_at_565_L1_31.pt filter=lfs diff=lfs merge=lfs -text
+checkpoints/GPT_model_at_300_L2_79.pt filter=lfs diff=lfs merge=lfs -text
