@@ -16,21 +16,21 @@ block_size = 256  # maximum context to look at for the next prediction
 max_iters = 3000
 eval_interval = 500
 learning_rate = 3e-4
-step_size = 50
+step_size = 2
 lr_step_size = max_iters // step_size if max_iters > 2 * step_size else 10
 gamma = 0.1
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu" if torch.cuda.is_available() else "cpu")
 eval_iters = 200
 n_embed = 384
 n_head = 6
 n_layer = 6
 dropout = 0.2
-ddp = False  # distributed training
+ddp = False # distributed training
 
-from_checkpoint = False
+from_checkpoint = True
 iteration = 0
 checkpoint_path = "checkpoints/"
-checkpoint_interval = 15
+checkpoint_interval = 20
 
 torch.cuda.empty_cache()
 
@@ -361,9 +361,9 @@ def training_loop(model, distributed=False, rank=None):
 
 
 if from_checkpoint:
-    CKPT_PATH = 'checkpoints/BigramLanguageModel_model_at_565_L1_31.pt'
+    CKPT_PATH = 'checkpoints/GPT_model_at_1980_L1_74.pt'
 
-    model = NGramLanguageModel()
+    model = GPT(vocab_size, n_embed, n_head, None, n_layer, 0.1)
 
     checkpoint = torch.load(CKPT_PATH)
     model.load_state_dict(checkpoint['model_state_dict'])
@@ -391,7 +391,7 @@ if __name__ == '__main__':
     if ddp:
         os.environ["MASTER_ADDR"] = "localhost"
         os.environ["MASTER_PORT"] = "29500"
-        world_size = 5
+        world_size = 4
         try:
             mp.spawn(distributed_training,
                      args=(world_size,), nprocs=world_size,
