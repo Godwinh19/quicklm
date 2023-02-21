@@ -361,7 +361,7 @@ def training_loop(model, distributed=False, rank=None):
 
 
 if from_checkpoint:
-    CKPT_PATH = 'checkpoints/GPT_model_at_1980_L1_74.pt'
+    CKPT_PATH = 'checkpoints/GPT_model_at_3020_L1_35.pt'
 
     model = GPT(vocab_size, n_embed, n_head, None, n_layer, 0.1)
 
