@@ -20,21 +20,21 @@ checkpoint_path = "checkpoints/"
 MODEL_CKPT = "facebook/wav2vec2-large-xlsr-53"
 model_name = "wav2vec2-large-xlsr-53"
 SAMPLING_RATE = 16000
-BATCH_SIZE = 2
+BATCH_SIZE = 8
 learning_rate = 1e-4
 iteration = 0
-EPOCHS = 1
+EPOCHS = 20
 
-device = torch.device("cpu" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 torch.cuda.empty_cache()
 
 # Prepare dataset
 with open('data/audio_train.pkl', 'rb') as file:
-    train = pickle.load(file)[:300]
+    train = pickle.load(file)
     train['waveform'] = train['waveform'].values
 
 with open('data/audio_test.pkl', 'rb') as file:
-    test = pickle.load(file)[:100]
+    test = pickle.load(file)
     test['waveform'] = test['waveform'].values
 
 train_dict = TDataset.from_pandas(train)
